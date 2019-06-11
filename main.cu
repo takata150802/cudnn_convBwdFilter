@@ -1,3 +1,11 @@
+/**
+ * Example usage of cuDNN convolution backward filter
+ * CUDA Version: 10.0
+ * cuDNN Version: 7.4
+ *
+ * @author     ryotakata
+ **/
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -63,6 +71,15 @@ void rand_vector_float (std::vector<float> &v);
 namespace {
     const char* getAlgoName(cudnnConvolutionBwdFilterAlgo_t algo);
 }
+void pseudoConvolutionBackwardFilter(
+        const std::vector<float> &x, 
+        const std::vector<float> &dy,
+        std::vector<float> &dw,
+        const int N, const int  Ci, const int Hi, const int Wi,
+        const int Co, const int Ho, const int Wo,
+        const int Hk, const int Wk, const int Hs, const int Ws,
+        const int Hp, const int Wp);
+float getMaxAbsError(const std::vector<float> &exp, const std::vector<float> &act);
 
 int main(int argc, char *argv[]) {
     cudnnHandle_t handle;
@@ -71,8 +88,8 @@ int main(int argc, char *argv[]) {
     CHECK(cudaEventCreate(&start));
     CHECK(cudaEventCreate(&stop));
 
-    const int n = 5, ci = 4, hi = 1, wi = 1, 
-          pad_h = 1, pad_w = 1, u = 1, v = 1, 
+    const int n = 32, ci = 2, hi = 14, wi = 14, 
+          pad_h = 0, pad_w = 0, u = 1, v = 1, 
           dilation_h = 1, dilation_w = 1,
           co = 3, kernel_h = 1, kernel_w = 1;
     int n_dmy, co_dmy, ho, wo;
@@ -196,17 +213,17 @@ int main(int argc, char *argv[]) {
                 /*const cudnnFilterDescriptor_t     */ dwDesc,
                 /*void *                            */ dw));
     cudaEventRecord(stop);
+    pseudoConvolutionBackwardFilter(h_x, h_dy, h_dw_expct,
+            n, ci, hi, wi,
+            co, ho, wo,
+            kernel_h, kernel_w, u, v,
+            pad_h, pad_w);
 
     CHECK(cudaDeviceSynchronize());
     cudaMemcpy(h_dw.data(), dw, size_dw, cudaMemcpyDeviceToHost);
 
-    for (std::vector<float>::const_iterator i = h_dw.begin(); i != h_dw.end(); ++i)
-        std::cout << *i << ' ';
-    std::cout << std::endl;
-
-    for (std::vector<float>::const_iterator i = h_dw_expct.begin(); i != h_dw_expct.end(); ++i)
-        std::cout << *i << ' ';
-    std::cout << std::endl;
+    std::cout << "Max Abs Error(expect vs actual): "
+              << getMaxAbsError(h_dw_expct, h_dw) << std::endl;
 
     float msec = 0;
     cudaEventElapsedTime(&msec, start, stop);
@@ -251,4 +268,77 @@ namespace {
             default: std::exit(EXIT_FAILURE); return "Error";
         }
     }
+}
+
+namespace {
+    int getIndex(
+            const int n,
+            const int c,
+            const int h,
+            const int w,
+            const int N,
+            const int C,
+            const int H,
+            const int W
+            ) {
+        return n * C * H * W
+            + c * H * W
+            + h * W
+            + w;
+    }
+}
+
+void pseudoConvolutionBackwardFilter(
+        const std::vector<float> &x, 
+        const std::vector<float> &dy,
+        std::vector<float> &dw,
+        const int N, const int  Ci, const int Hi, const int Wi,
+        const int Co, const int Ho, const int Wo,
+        const int Hk, const int Wk, const int Hs, const int Ws,
+        const int Hp, const int Wp
+        ) {
+
+    for (std::vector<float>::iterator i = dw.begin(); i != dw.end(); ++i)
+        *i = 0.f;
+
+    int idx_x, idx_dy, idx_dw;
+    for (int n = 0; n < N; ++n) {
+        for (int ci = 0; ci < Ci; ++ci) {
+            for (int hi = 0; hi < Hi; ++hi) {
+                for (int wi = 0; wi < Wi; ++wi) {
+                    for (int co = 0; co < Co; ++co) {
+                        for (int ho = 0; ho < Ho; ++ho) {
+                            for (int wo = 0; wo < Wo; ++wo) {
+                                for (int hk = 0; hk < Hk; ++hk) {
+                                    for (int wk = 0; wk < Wk; ++wk) {
+                                        if ((ho * Hs + hk) == (hi + Hp)
+                                                && (wo * Ws + wk) == (wi + Wp)) {
+                                            idx_x  = getIndex(n, ci, hi, wi, N, Ci, Hi, Wi);
+                                            idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
+                                            idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
+                                            dw[idx_dw] += x[idx_x] * dy[idx_dy];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return;
+}
+
+float getMaxAbsError(const std::vector<float> &exp, const std::vector<float> &act) {
+    float tmp, ret;
+    std::vector<float> abs_err(exp.size(),0.f);
+    for (std::vector<float>::iterator i = abs_err.begin(); i != abs_err.end(); ++i) {
+        size_t index = std::distance(abs_err.begin(), i);
+        tmp  = act[index] - exp[index];
+        *i = (tmp >= 0) ? tmp : -tmp;
+    }
+
+    ret = *std::max_element(abs_err.begin(), abs_err.end());
+    return ret;
 }

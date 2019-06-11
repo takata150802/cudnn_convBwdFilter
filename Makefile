@@ -2,7 +2,7 @@ CUDNN_PATH = /usr/include
 
 main: main.cu
 	nvcc -g \
-        -O0 \
+        -O2 \
         -I$(CUDNN_PATH) \
         -lcudnn \
         -std=c++11 \
