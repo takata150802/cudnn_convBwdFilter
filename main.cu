@@ -302,22 +302,25 @@ void pseudoConvolutionBackwardFilter(
         *i = 0.f;
 
     int idx_x, idx_dy, idx_dw;
-    for (int n = 0; n < N; ++n) {
-        for (int ci = 0; ci < Ci; ++ci) {
-            for (int hi = 0; hi < Hi; ++hi) {
+    for (int hi = 0; hi < Hi; ++hi) {
+        for (int ho = 0; ho < Ho; ++ho) {
+            for (int hk = 0; hk < Hk; ++hk) {
+                if ((ho * Hs + hk) != (hi + Hp)) {
+                    continue;
+                }
                 for (int wi = 0; wi < Wi; ++wi) {
-                    for (int co = 0; co < Co; ++co) {
-                        for (int ho = 0; ho < Ho; ++ho) {
-                            for (int wo = 0; wo < Wo; ++wo) {
-                                for (int hk = 0; hk < Hk; ++hk) {
-                                    for (int wk = 0; wk < Wk; ++wk) {
-                                        if ((ho * Hs + hk) == (hi + Hp)
-                                                && (wo * Ws + wk) == (wi + Wp)) {
-                                            idx_x  = getIndex(n, ci, hi, wi, N, Ci, Hi, Wi);
-                                            idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
-                                            idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
-                                            dw[idx_dw] += x[idx_x] * dy[idx_dy];
-                                        }
+                    for (int wo = 0; wo < Wo; ++wo) {
+                        for (int wk = 0; wk < Wk; ++wk) {
+                            if ( (wo * Ws + wk) != (wi + Wp)) {
+                                continue;
+                            }
+                            for (int n = 0; n < N; ++n) {
+                                for (int ci = 0; ci < Ci; ++ci) {
+                                    for (int co = 0; co < Co; ++co) {
+                                        idx_x  = getIndex(n, ci, hi, wi, N, Ci, Hi, Wi);
+                                        idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
+                                        idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
+                                        dw[idx_dw] += x[idx_x] * dy[idx_dy];
                                     }
                                 }
                             }
