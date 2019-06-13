@@ -69,7 +69,7 @@ void pseudoConvolutionBackwardFilter(
         const int Co, const int Ho, const int Wo,
         const int Hk, const int Wk, const int Hs, const int Ws,
         const int Hp, const int Wp);
-float getMaxAbsError(const std::vector<float> &exp, const std::vector<float> &act);
+int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act);
 
 int main(int argc, char *argv[]) {
     cudnnHandle_t handle;
@@ -215,8 +215,8 @@ int main(int argc, char *argv[]) {
             kernel_h, kernel_w, u, v,
             pad_h, pad_w);
     cudaMemcpy(h_dw.data(), dw, size_dw, cudaMemcpyDeviceToHost);
-    std::cout << "Max Abs Error(expect vs actual): "
-              << getMaxAbsError(h_dw_expct, h_dw) << std::endl;
+    std::cout << "Max Ulp Error(expect vs actual): "
+              << getMaxUlpError(h_dw_expct, h_dw) << std::endl;
 
 
 
@@ -324,8 +324,8 @@ void pseudoConvolutionBackwardFilter(
     return;
 }
 
-float getMaxAbsError(const std::vector<float> &exp, const std::vector<float> &act) {
-    float tmp, ret;
+int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act) {
+    float tmp;
     std::vector<float> abs_err(exp.size(),0.f);
     for (std::vector<float>::iterator i = abs_err.begin(); i != abs_err.end(); ++i) {
         size_t index = std::distance(abs_err.begin(), i);
@@ -333,6 +333,7 @@ float getMaxAbsError(const std::vector<float> &exp, const std::vector<float> &ac
         *i = (tmp >= 0) ? tmp : -tmp;
     }
 
-    ret = *std::max_element(abs_err.begin(), abs_err.end());
-    return ret;
+    std::vector<float>::iterator i = std::max_element(abs_err.begin(), abs_err.end());
+    size_t index = std::distance(abs_err.begin(), i);
+    return abs((int)act[index] - (int)exp[index]);
 }
