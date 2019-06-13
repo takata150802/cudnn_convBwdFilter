@@ -16,10 +16,10 @@
 #define CHECK(call)                                                  \
 {                                                                    \
     const cudaError_t error = call;                                  \
-    std::cout << "CHECK cudaError_t: ";                              \
     if (error != cudaSuccess)                                        \
     {                                                                \
-        std::cout << __FILE__                                        \
+        std::cout << "CHECK cudaError_t: "                           \
+                  << __FILE__                                        \
                   << "("                                             \
                   << __LINE__                                        \
                   << ")"                                             \
@@ -33,16 +33,6 @@
                   << cudaGetErrorString(error)                       \
                   << std::endl;                                      \
         std::exit(EXIT_FAILURE);                                     \
-    }                                                                \
-    else                                                             \
-    {                                                                \
-        std::cout << __FILE__                                        \
-                  << "("                                             \
-                  << __LINE__                                        \
-                  << ")"                                             \
-                  << ": "                                            \
-                  << "cudaSuccess"                                   \
-                  << std::endl;                                      \
     }                                                                \
 }
 
@@ -213,21 +203,22 @@ int main(int argc, char *argv[]) {
                 /*const cudnnFilterDescriptor_t     */ dwDesc,
                 /*void *                            */ dw));
     cudaEventRecord(stop);
+    CHECK(cudaDeviceSynchronize());
+
+    float msec = 0;
+    cudaEventElapsedTime(&msec, start, stop);
+    std::cout << "Exec time: " << msec * 1000 << "[usec]" << std::endl;
+
     pseudoConvolutionBackwardFilter(h_x, h_dy, h_dw_expct,
             n, ci, hi, wi,
             co, ho, wo,
             kernel_h, kernel_w, u, v,
             pad_h, pad_w);
-
-    CHECK(cudaDeviceSynchronize());
     cudaMemcpy(h_dw.data(), dw, size_dw, cudaMemcpyDeviceToHost);
-
     std::cout << "Max Abs Error(expect vs actual): "
               << getMaxAbsError(h_dw_expct, h_dw) << std::endl;
 
-    float msec = 0;
-    cudaEventElapsedTime(&msec, start, stop);
-    std::cout << "Exec time: " << msec * 1000 << "[usec]" << std::endl;
+
 
     cudaFree(x);
     cudaFree(dy);
