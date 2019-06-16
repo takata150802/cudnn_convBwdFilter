@@ -12,6 +12,7 @@
 #include <limits>
 #include <cassert>
 #include <cudnn.h>
+#include "run_conv_bwd_filter.h"
 
 #define CHECK(call)                                                  \
 {                                                                    \
@@ -57,32 +58,44 @@
     }                                                                \
 }
 
-void rand_vector_float (std::vector<float> &v);
 namespace {
+    void randVectorFloat (std::vector<float> &v);
     const char* getAlgoName(cudnnConvolutionBwdFilterAlgo_t algo);
-}
-void pseudoConvolutionBackwardFilter(
-        const std::vector<float> &x, 
-        const std::vector<float> &dy,
-        std::vector<float> &dw,
-        const int N, const int  Ci, const int Hi, const int Wi,
-        const int Co, const int Ho, const int Wo,
-        const int Hk, const int Wk, const int Hs, const int Ws,
-        const int Hp, const int Wp);
-int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act);
 
-int main(int argc, char *argv[]) {
+    void pseudoConvolutionBackwardFilter(
+            const std::vector<float> &x, 
+            const std::vector<float> &dy,
+            std::vector<float> &dw,
+            const int N, const int  Ci, const int Hi, const int Wi,
+            const int Co, const int Ho, const int Wo,
+            const int Hk, const int Wk, const int Hs, const int Ws,
+            const int Hp, const int Wp);
+
+    int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act);
+}
+
+int runConvBwdFilter(
+        const int n,
+        const int ci,
+        const int hi,
+        const int wi,
+        const int co,
+        const int u,
+        const int v,
+        const int kernel_h,
+        const int kernel_w,
+        const int pad_h,
+        const int pad_w,
+        const int dilation_h,
+        const int dilation_w
+        ) {
+    int n_dmy, co_dmy, ho, wo;
+
     cudnnHandle_t handle;
     checkCUDNN(cudnnCreate(&handle));
     cudaEvent_t start, stop;
     CHECK(cudaEventCreate(&start));
     CHECK(cudaEventCreate(&stop));
-
-    const int n = 32, ci = 2, hi = 14, wi = 14, 
-          pad_h = 0, pad_w = 0, u = 1, v = 1, 
-          dilation_h = 1, dilation_w = 1,
-          co = 3, kernel_h = 1, kernel_w = 1;
-    int n_dmy, co_dmy, ho, wo;
 
     cudnnConvolutionDescriptor_t convDesc;
     checkCUDNN(cudnnCreateConvolutionDescriptor(&convDesc));
@@ -170,8 +183,8 @@ int main(int argc, char *argv[]) {
             std::numeric_limits<float>::quiet_NaN());
     std::vector<float> h_dw_expct(co * ci * kernel_h * kernel_w,
             std::numeric_limits<float>::quiet_NaN());
-    rand_vector_float(h_x);
-    rand_vector_float(h_dy);
+    randVectorFloat(h_x);
+    randVectorFloat(h_dy);
 
     void *x = nullptr, *dy = nullptr, *dw = nullptr, *workSpace = nullptr;
     size_t size_x = n * ci * hi * wi * sizeof(float);
@@ -216,7 +229,7 @@ int main(int argc, char *argv[]) {
             pad_h, pad_w);
     cudaMemcpy(h_dw.data(), dw, size_dw, cudaMemcpyDeviceToHost);
     std::cout << "Max Ulp Error(expect vs actual): "
-              << getMaxUlpError(h_dw_expct, h_dw) << std::endl;
+        << getMaxUlpError(h_dw_expct, h_dw) << std::endl;
 
 
 
@@ -234,16 +247,16 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-std::mt19937 mt(0);
-void rand_vector_float (std::vector<float> &v) {
-    std::normal_distribution<> rand(0, 5);
-    for (std::vector<float>::iterator i = v.begin(); i != v.end(); ++i) {
-        *i = rand(mt);
-    }
-    return;
-}
-
 namespace {
+    std::mt19937 mt(0);
+    void randVectorFloat (std::vector<float> &v) {
+        std::normal_distribution<> rand(0, 5);
+        for (std::vector<float>::iterator i = v.begin(); i != v.end(); ++i) {
+            *i = rand(mt);
+        }
+        return;
+    }
+
     const char* getAlgoName(cudnnConvolutionBwdFilterAlgo_t algo) 
     {
         switch (algo) 
@@ -259,59 +272,59 @@ namespace {
             default: std::exit(EXIT_FAILURE); return "Error";
         }
     }
-}
 
-namespace {
-    int getIndex(
-            const int n,
-            const int c,
-            const int h,
-            const int w,
-            const int N,
-            const int C,
-            const int H,
-            const int W
-            ) {
-        return n * C * H * W
-            + c * H * W
-            + h * W
-            + w;
+    namespace {
+        int getIndex(
+                const int n,
+                const int c,
+                const int h,
+                const int w,
+                const int N,
+                const int C,
+                const int H,
+                const int W
+                ) {
+            return n * C * H * W
+                + c * H * W
+                + h * W
+                + w;
+        }
     }
-}
 
-void pseudoConvolutionBackwardFilter(
-        const std::vector<float> &x, 
-        const std::vector<float> &dy,
-        std::vector<float> &dw,
-        const int N, const int  Ci, const int Hi, const int Wi,
-        const int Co, const int Ho, const int Wo,
-        const int Hk, const int Wk, const int Hs, const int Ws,
-        const int Hp, const int Wp
-        ) {
+    void pseudoConvolutionBackwardFilter(
+            const std::vector<float> &x, 
+            const std::vector<float> &dy,
+            std::vector<float> &dw,
+            const int N, const int  Ci, const int Hi, const int Wi,
+            const int Co, const int Ho, const int Wo,
+            const int Hk, const int Wk, const int Hs, const int Ws,
+            const int Hp, const int Wp
+            ) {
 
-    for (std::vector<float>::iterator i = dw.begin(); i != dw.end(); ++i)
-        *i = 0.f;
+        for (std::vector<float>::iterator i = dw.begin(); i != dw.end(); ++i)
+            *i = 0.f;
 
-    int idx_x, idx_dy, idx_dw;
-    for (int hi = 0; hi < Hi; ++hi) {
-        for (int ho = 0; ho < Ho; ++ho) {
-            for (int hk = 0; hk < Hk; ++hk) {
-                if ((ho * Hs + hk) != (hi + Hp)) {
-                    continue;
-                }
-                for (int wi = 0; wi < Wi; ++wi) {
-                    for (int wo = 0; wo < Wo; ++wo) {
-                        for (int wk = 0; wk < Wk; ++wk) {
-                            if ( (wo * Ws + wk) != (wi + Wp)) {
-                                continue;
-                            }
-                            for (int n = 0; n < N; ++n) {
-                                for (int ci = 0; ci < Ci; ++ci) {
-                                    for (int co = 0; co < Co; ++co) {
-                                        idx_x  = getIndex(n, ci, hi, wi, N, Ci, Hi, Wi);
-                                        idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
-                                        idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
-                                        dw[idx_dw] += x[idx_x] * dy[idx_dy];
+        int idx_x, idx_dy, idx_dw;
+        for (int hi = 0; hi < Hi; ++hi) {
+            for (int ho = 0; ho < Ho; ++ho) {
+                for (int hk = 0; hk < Hk; ++hk) {
+                    if ((ho * Hs + hk) != (hi + Hp)) {
+                        continue;
+                    }
+                    for (int wi = 0; wi < Wi; ++wi) {
+                        for (int wo = 0; wo < Wo; ++wo) {
+                            for (int wk = 0; wk < Wk; ++wk) {
+                                if ( (wo * Ws + wk) != (wi + Wp)) {
+                                    continue;
+                                }
+                                for (int n = 0; n < N; ++n) {
+                                    for (int ci = 0; ci < Ci; ++ci) {
+                                        for (int co = 0; co < Co; ++co) {
+                                            idx_x  = getIndex(n, ci, hi, wi, N, Ci, Hi, Wi);
+                                            idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
+                                            idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
+                                            dw[idx_dw] += x[idx_x] * dy[idx_dy];
+                                        }
                                     }
                                 }
                             }
@@ -320,20 +333,20 @@ void pseudoConvolutionBackwardFilter(
                 }
             }
         }
+        return;
     }
-    return;
-}
 
-int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act) {
-    float tmp;
-    std::vector<float> abs_err(exp.size(),0.f);
-    for (std::vector<float>::iterator i = abs_err.begin(); i != abs_err.end(); ++i) {
+    int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act) {
+        float tmp;
+        std::vector<float> abs_err(exp.size(),0.f);
+        for (std::vector<float>::iterator i = abs_err.begin(); i != abs_err.end(); ++i) {
+            size_t index = std::distance(abs_err.begin(), i);
+            tmp  = act[index] - exp[index];
+            *i = (tmp >= 0) ? tmp : -tmp;
+        }
+
+        std::vector<float>::iterator i = std::max_element(abs_err.begin(), abs_err.end());
         size_t index = std::distance(abs_err.begin(), i);
-        tmp  = act[index] - exp[index];
-        *i = (tmp >= 0) ? tmp : -tmp;
+        return abs((int)act[index] - (int)exp[index]);
     }
-
-    std::vector<float>::iterator i = std::max_element(abs_err.begin(), abs_err.end());
-    size_t index = std::distance(abs_err.begin(), i);
-    return abs((int)act[index] - (int)exp[index]);
 }
