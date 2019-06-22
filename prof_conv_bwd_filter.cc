@@ -12,7 +12,7 @@
 #include <limits>
 #include <cassert>
 #include <cudnn.h>
-#include "run_conv_bwd_filter.h"
+#include "prof_conv_bwd_filter.h"
 
 #define CHECK(call)                                                  \
 {                                                                    \
@@ -74,7 +74,7 @@ namespace {
     int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act);
 }
 
-int runConvBwdFilter(
+int profConvBwdFilter(
         const int n,
         const int ci,
         const int hi,

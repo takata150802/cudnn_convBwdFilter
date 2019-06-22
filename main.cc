@@ -1,8 +1,8 @@
-#include "run_conv_bwd_filter.h"
+#include "prof_conv_bwd_filter.h"
 
 int main (void) {
 
-    runConvBwdFilter(
+    profConvBwdFilter(
             /*const int n,*/               1,
             /*const int ci,*/              2,
             /*const int hi,*/              3,

@@ -1,7 +1,7 @@
-#ifndef RUN_CONV_BWD_FILTER_H
-#define RUN_CONV_BWD_FILTER_H
+#ifndef PROF_CONV_BWD_FILTER_H
+#define PROF_CONV_BWD_FILTER_H
 
-int runConvBwdFilter(
+int profConvBwdFilter(
         const int n,
         const int ci,
         const int hi,
