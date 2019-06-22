@@ -1,23 +1,26 @@
 import cython
 
-def func():
+def convBwdFilter(
+        const int n, const int ci, const int hi, const int wi,
+        const int co,
+        const int u, const int v,
+        const int kernel_h, const int kernel_w,
+        const int pad_h, const int pad_w,
+        const int dilation_h, const int dilation_w):
     cdef:
         int ret
-    ret = runConvBwdFilter(1,2,3,4,5,1,2,3,4,1,2,1,1)
+    ret =runConvBwdFilter( \
+        n, \
+        ci, \
+        hi, \
+        wi, \
+        co, \
+        u, \
+        v, \
+        kernel_h, \
+        kernel_w, \
+        pad_h, \
+        pad_w, \
+        dilation_h, \
+        dilation_w)
     return ret
-
-#     z =runConvBwdFilter( \
-#             """const int n,"""               1, \
-#             """const int ci,"""              2, \
-#             """const int hi,"""              3, \
-#             """const int wi,"""              4, \
-#             """const int co,"""              5, \
-#             """const int u,"""               1, \
-#             """const int v,"""               2, \
-#             """const int kernel_h,"""        3, \
-#             """const int kernel_w,"""        4, \
-#             """const int pad_h,"""           1, \
-#             """const int pad_w,"""           2, \
-#             """const int dilation_h,"""      1, \
-#             """const int dilation_w"""       1 \
-#             )

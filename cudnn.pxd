@@ -1,5 +1,5 @@
 cdef extern from "run_conv_bwd_filter.h":
-    int runConvBwdFilter(
+    cdef int runConvBwdFilter(
             const int n,
             const int ci,
             const int hi,
@@ -13,4 +13,4 @@ cdef extern from "run_conv_bwd_filter.h":
             const int pad_w,
             const int dilation_h,
             const int dilation_w
-            )
+            ) except +
