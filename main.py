@@ -14,18 +14,22 @@ pad_w = 0
 dilation_h = 1
 dilation_w = 1
 
-convBwdFilter(\
-    n, \
-    ci, \
-    hi, \
-    wi, \
-    co, \
-    u, \
-    v, \
-    kernel_h, \
-    kernel_w, \
-    pad_h, \
-    pad_w, \
-    dilation_h, \
-    dilation_w  \
-    )
+ret, msec, max_ulp = convBwdFilter(\
+        n, \
+        ci, \
+        hi, \
+        wi, \
+        co, \
+        u, \
+        v, \
+        kernel_h, \
+        kernel_w, \
+        pad_h, \
+        pad_w, \
+        dilation_h, \
+        dilation_w  \
+        )
+
+print (ret)
+print (msec)
+print (max_ulp)

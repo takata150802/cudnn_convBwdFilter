@@ -14,6 +14,8 @@ int profConvBwdFilter(
         const int pad_h,
         const int pad_w,
         const int dilation_h,
-        const int dilation_w
+        const int dilation_w,
+        float& msec,
+        int& max_ulp
         );
 #endif

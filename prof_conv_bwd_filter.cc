@@ -87,7 +87,9 @@ int profConvBwdFilter(
         const int pad_h,
         const int pad_w,
         const int dilation_h,
-        const int dilation_w
+        const int dilation_w,
+        float& msec,
+        int& max_ulp
         ) {
     int n_dmy, co_dmy, ho, wo;
 
@@ -218,7 +220,7 @@ int profConvBwdFilter(
     cudaEventRecord(stop);
     CHECK(cudaDeviceSynchronize());
 
-    float msec = 0;
+    // msec = 0;
     cudaEventElapsedTime(&msec, start, stop);
     std::cout << "Exec time: " << msec * 1000 << "[usec]" << std::endl;
 
@@ -228,8 +230,9 @@ int profConvBwdFilter(
             kernel_h, kernel_w, u, v,
             pad_h, pad_w);
     cudaMemcpy(h_dw.data(), dw, size_dw, cudaMemcpyDeviceToHost);
+    max_ulp = getMaxUlpError(h_dw_expct, h_dw);
     std::cout << "Max Ulp Error(expect vs actual): "
-        << getMaxUlpError(h_dw_expct, h_dw) << std::endl;
+        << max_ulp << std::endl;
 
 
 

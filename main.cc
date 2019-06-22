@@ -1,7 +1,10 @@
+#include <iostream>
 #include "prof_conv_bwd_filter.h"
 
 int main (void) {
 
+    float msec;
+    int   max_ulp;
     profConvBwdFilter(
             /*const int n,*/               1,
             /*const int ci,*/              2,
@@ -15,6 +18,16 @@ int main (void) {
             /*const int pad_h,*/           1,
             /*const int pad_w,*/           2,
             /*const int dilation_h,*/      1,
-            /*const int dilation_w*/       1
+            /*const int dilation_w,*/      1,
+            /*float& msec,*/            msec,
+            /*int& max_ulp*/         max_ulp
             );
+   std::cout << __FILE__ << ": "
+             << "Exec time: " 
+             << msec * 1000 << "[usec]" 
+             << std::endl;
+   std::cout << __FILE__ << ": "
+             << "Max Ulp Error(expect vs actual): "
+             << max_ulp 
+             << std::endl;
 }

@@ -8,8 +8,10 @@ def convBwdFilter(
         const int pad_h, const int pad_w,
         const int dilation_h, const int dilation_w):
     cdef:
-        int ret
-    ret =runConvBwdFilter( \
+        int ret = -1
+        float msec = -1
+        int max_ulp = -1
+    ret =profConvBwdFilter( \
         n, \
         ci, \
         hi, \
@@ -22,5 +24,7 @@ def convBwdFilter(
         pad_h, \
         pad_w, \
         dilation_h, \
-        dilation_w)
-    return ret
+        dilation_w,
+        msec,
+        max_ulp)
+    return ret, msec, max_ulp
