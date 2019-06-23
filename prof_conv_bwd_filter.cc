@@ -89,7 +89,8 @@ int profConvBwdFilter(
         const int dilation_h,
         const int dilation_w,
         float& msec,
-        int& max_ulp
+        int& max_ulp,
+        std::string& algo_name
         ) {
     int n_dmy, co_dmy, ho, wo;
 
@@ -167,7 +168,8 @@ int profConvBwdFilter(
                 /*cudnnConvolutionBwdFilterPreference_t*/ CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
                 /*size_t (is not used)                 */ 0,
                 /*cudnnConvolutionBwdFilterAlgo_t      */ &algo));
-    std::cout << "cudnnConvolutionBwdFilterAlgo_t: " << getAlgoName(algo) << std::endl;
+    algo_name = getAlgoName(algo);
+    std::cout << "cudnnConvolutionBwdFilterAlgo_t: " << algo_name << std::endl;
 
     size_t workSpaceSizeInBytes;
     checkCUDNN(cudnnGetConvolutionBackwardFilterWorkspaceSize(

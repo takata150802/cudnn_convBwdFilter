@@ -1,5 +1,4 @@
 import cython
-
 def convBwdFilter(
         const int n, const int ci, const int hi, const int wi,
         const int co,
@@ -11,6 +10,7 @@ def convBwdFilter(
         int ret = -1
         float msec = -1
         int max_ulp = -1
+        string algo_name = ""
     ret =profConvBwdFilter( \
         n, \
         ci, \
@@ -26,5 +26,6 @@ def convBwdFilter(
         dilation_h, \
         dilation_w,
         msec,
-        max_ulp)
-    return ret, msec, max_ulp
+        max_ulp,
+        algo_name)
+    return ret, msec, max_ulp, algo_name.decode('UTF-8')

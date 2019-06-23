@@ -5,6 +5,7 @@ int main (void) {
 
     float msec;
     int   max_ulp;
+    std::string algo_name;
     profConvBwdFilter(
             /*const int n,*/               1,
             /*const int ci,*/              2,
@@ -20,7 +21,8 @@ int main (void) {
             /*const int dilation_h,*/      1,
             /*const int dilation_w,*/      1,
             /*float& msec,*/            msec,
-            /*int& max_ulp*/         max_ulp
+            /*int& max_ulp*/         max_ulp,
+            /*std::string*/        algo_name
             );
    std::cout << __FILE__ << ": "
              << "Exec time: " 
@@ -29,5 +31,9 @@ int main (void) {
    std::cout << __FILE__ << ": "
              << "Max Ulp Error(expect vs actual): "
              << max_ulp 
+             << std::endl;
+   std::cout << __FILE__ << ": "
+             << "cudnnConvolutionBwdFilterAlgo_t: "
+             << algo_name
              << std::endl;
 }

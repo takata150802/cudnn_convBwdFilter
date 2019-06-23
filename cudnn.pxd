@@ -1,3 +1,5 @@
+from libcpp.string cimport string
+
 cdef extern from "prof_conv_bwd_filter.h":
     cdef int profConvBwdFilter(
             const int n,
@@ -14,5 +16,6 @@ cdef extern from "prof_conv_bwd_filter.h":
             const int dilation_h,
             const int dilation_w,
             float& msec,
-            int& max_ulp
+            int& max_ulp,
+            string algo_name
             ) except +
