@@ -69,7 +69,8 @@ namespace {
             const int N, const int  Ci, const int Hi, const int Wi,
             const int Co, const int Ho, const int Wo,
             const int Hk, const int Wk, const int Hs, const int Ws,
-            const int Hp, const int Wp);
+            const int Hp, const int Wp,
+            int& flop, int& byte);
 
     int getMaxUlpError(const std::vector<float> &exp, const std::vector<float> &act);
 }
@@ -90,7 +91,9 @@ int profConvBwdFilter(
         const int dilation_w,
         float& msec,
         int& max_ulp,
-        std::string& algo_name
+        std::string& algo_name,
+        int& flop,
+        int& byte
         ) {
     int n_dmy, co_dmy, ho, wo;
 
@@ -230,7 +233,8 @@ int profConvBwdFilter(
             n, ci, hi, wi,
             co, ho, wo,
             kernel_h, kernel_w, u, v,
-            pad_h, pad_w);
+            pad_h, pad_w,
+            flop, byte);
     cudaMemcpy(h_dw.data(), dw, size_dw, cudaMemcpyDeviceToHost);
     max_ulp = getMaxUlpError(h_dw_expct, h_dw);
     std::cout << "Max Ulp Error(expect vs actual): "
@@ -303,11 +307,13 @@ namespace {
             const int N, const int  Ci, const int Hi, const int Wi,
             const int Co, const int Ho, const int Wo,
             const int Hk, const int Wk, const int Hs, const int Ws,
-            const int Hp, const int Wp
+            const int Hp, const int Wp,
+            int& flop, int& byte
             ) {
 
         for (std::vector<float>::iterator i = dw.begin(); i != dw.end(); ++i)
             *i = 0.f;
+        flop = 0;
 
         int idx_x, idx_dy, idx_dw;
         for (int hi = 0; hi < Hi; ++hi) {
@@ -329,6 +335,7 @@ namespace {
                                             idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
                                             idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
                                             dw[idx_dw] += x[idx_x] * dy[idx_dy];
+                                            flop++;
                                         }
                                     }
                                 }
@@ -338,6 +345,9 @@ namespace {
                 }
             }
         }
+        byte = N * Ci * Hi * Wi * 4
+            + N * Co * Ho * Wo * 4
+            + Co * Ci * Hk * Wk * 4;
         return;
     }
 

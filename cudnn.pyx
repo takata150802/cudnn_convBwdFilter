@@ -11,21 +11,25 @@ def convBwdFilter(
         float msec = -1
         int max_ulp = -1
         string algo_name = ""
-    ret =profConvBwdFilter( \
-        n, \
-        ci, \
-        hi, \
-        wi, \
-        co, \
-        u, \
-        v, \
-        kernel_h, \
-        kernel_w, \
-        pad_h, \
-        pad_w, \
-        dilation_h, \
+        int flop = -1;
+        int byte = -1;
+    ret =profConvBwdFilter(
+        n,
+        ci,
+        hi,
+        wi,
+        co,
+        u,
+        v,
+        kernel_h,
+        kernel_w,
+        pad_h,
+        pad_w,
+        dilation_h,
         dilation_w,
         msec,
         max_ulp,
-        algo_name)
-    return ret, msec, max_ulp, algo_name.decode('UTF-8')
+        algo_name,
+        flop,
+        byte)
+    return ret, msec, max_ulp, algo_name.decode('UTF-8'), flop, byte

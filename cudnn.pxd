@@ -17,5 +17,7 @@ cdef extern from "prof_conv_bwd_filter.h":
             const int dilation_w,
             float& msec,
             int& max_ulp,
-            string algo_name
+            string algo_name,
+            int& flop,
+            int& byte
             ) except +

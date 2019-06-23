@@ -17,6 +17,8 @@ int profConvBwdFilter(
         const int dilation_w,
         float& msec,
         int& max_ulp,
-        std::string& algo_name
+        std::string& algo_name,
+        int& flop,
+        int& byte
         );
 #endif
