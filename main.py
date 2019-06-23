@@ -25,17 +25,23 @@ def main():
 
     """profile cudnn Convoultion Backward Filter"""
     df = prof_conv_bwd_filter()
+    df.to_csv("prof.cudnnConvBwdFilter.csv")
 
     """visualization, Roofline model"""
-    fig = plt.figure()
+    df = pd.read_csv('prof.cudnnConvBwdFilter.csv', header=0, index_col=0)
+    fig = plt.figure(figsize=(10,5))
     ax = fig.add_subplot(1, 1, 1)
     plot_rooline (ax, MACHINE_SPEC, PEAK_PERF, BAND_WIDTH)
     plot_result (ax, df)
+    # fig.subplots_adjust(right=0.8)
+    plt.subplots_adjust(left=0.1, right=0.6)
+    plt.savefig('roofline.png')
     return
 
 def prof_conv_bwd_filter ():
     from cudnn import convBwdFilter
     from chainer.utils import get_conv_outsize
+    from random import seed
     from random import randint
 
     df = pd.DataFrame(columns=[
@@ -49,12 +55,13 @@ def prof_conv_bwd_filter ():
             ])
 
     count = 0
-    while (count < 50):
+    seed(0)
+    while (count < 1000):
         n = randint(1, 32)
-        ci = randint(1, 20)
+        ci = randint(1, 32)
         hi = randint(1, 122)
         wi = randint(1, 122)
-        co = randint(1, 20)
+        co = randint(1, 32)
         u = randint(1, 7)
         v = randint(1, 7)
         kernel_h = randint(1, 40)
@@ -67,22 +74,6 @@ def prof_conv_bwd_filter ():
         assert dilation_h == 1
         ho = get_conv_outsize(hi, u, kernel_h, pad_h, cover_all=False, d=dilation_h)
         wo = get_conv_outsize(wi, v, kernel_w, pad_w, cover_all=False, d=dilation_w)
-        print (
-            ci,
-            hi,
-            wi)
-        print (
-            co,
-            ho,
-            wo)
-        print (
-            u,
-            v,
-            kernel_h,
-            kernel_w,
-            pad_h,
-            pad_w,
-            )
         if ho <= 0 or wo <= 0:
             continue
         if (pad_h + hi ) < kernel_h:
@@ -126,21 +117,43 @@ def plot_rooline (ax, MACHINE_SPEC, PEAK_PERF, BAND_WIDTH):
     ax = ax.plot(x,y)
     return ax
 
-
 def plot_result (ax, df):
     import pandas as pd
-    # dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3']
-    # dd.plot(ax=ax, kind='line', x=u'arithmetic_intensity', y=u'GFlops', style=['r.'], alpha=0.5)
-    # dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1']
-    # dd.plot(ax=ax, kind='line', x=u'arithmetic_intensity', y=u'GFlops', style=['b.'], alpha=0.5)
-    df.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['b.'], alpha=0.5)
+    ls_legend = [MACHINE_SPEC,]
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['b.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0')
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['g.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1')
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['r.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT')
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['c.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3')
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['m.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED')
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['y.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING')
+    dd = df[df.algo_name == 'CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT']
+    if len(dd) > 0:
+        dd.plot(ax=ax, kind='line', x='arithmetic_intensity', y='GFlops', style=['k.'], alpha=0.5)
+        ls_legend.append('CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT')
+
+    ax.set_ylabel('Performance [Gflops]')
+    ax.legend(ls_legend, bbox_to_anchor=(1.0, 1), loc='upper left')
     plt.xscale("log")
     plt.yscale("log")
     plt.grid(which="both")
-    ax.legend([MACHINE_SPEC, "cudnnConvolutionBackwardFilter()"])
-    ax.set_ylabel('Performance [Gflops]')
-    plt.savefig('roofline.png')
-    df.to_csv("prof.cudnnConvBwdFilter.csv")
     return ax
 
 def argsparse():
