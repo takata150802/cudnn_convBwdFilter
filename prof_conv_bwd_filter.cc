@@ -335,7 +335,8 @@ namespace {
                                             idx_dy = getIndex(n, co, ho, wo, N, Co, Ho, Wo);
                                             idx_dw = getIndex(co, ci, hk, wk, Co, Ci, Hk, Wk);
                                             dw[idx_dw] += x[idx_x] * dy[idx_dy];
-                                            flop++;
+                                            // NOTE: +2 (mul + add)
+                                            flop += 2;
                                         }
                                     }
                                 }
